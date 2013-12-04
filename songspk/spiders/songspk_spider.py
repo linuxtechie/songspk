@@ -78,7 +78,7 @@ class SongsPKSpider(BaseSpider):
             torrent['url'] = qu
             torrent['title'] = title[0]
             torrent['cookie'] = self.cl
-            torrent['filename'] = filename
+            torrent['filename'] = urllib.unquote(filename)
             yield torrent
             return
         yield Request(qu, callback=self.parse_category)
