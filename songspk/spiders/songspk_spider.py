@@ -5,12 +5,13 @@ from scrapy.http import Request
 from scrapy.contrib.spiders import CrawlSpider, Rule
 from scrapy.contrib.linkextractors.sgml import SgmlLinkExtractor
 from scrapy.http.cookies import CookieJar
+from songspk.settings import USER_AGENT
 
-import re,pdb,os
+import re,pdb,os,urllib2,urllib
 
 class SongsPKSpider(BaseSpider):
     name = 'songspk'
-    allowed_domains = ['songspk.info']
+    allowed_domains = ['songspk.info', 'mp3funda.se', 'downloadming1.com']
     start_urls = ['http://www.songspk.info/latest.html']
     cookieJar = None
     cookie = []
@@ -51,21 +52,36 @@ class SongsPKSpider(BaseSpider):
             yield Request(link, callback=self.parse_category)
     
     def parse_category(self, response):
-        self.cookieJar = response.meta.setdefault('cookie_jar', CookieJar())
-        self.cookieJar.extract_cookies(response, response.request)
-        self.log("Printing cookie information");
-        for cookie in self.cookieJar:
-            self.cl.append(cookie)
-            self.log('cookies %s' % cookie)
-        self.log("Printing cookie information done");
         sel = Selector(response)
         title = sel.xpath('/html/body/table/tr[2]/td/table/tr/td[3]/table/tr[16]/td/table/tr[2]/td/table/tr[2]/td/div/a/text()').extract()
         url = sel.xpath('/html/body/table/tr[2]/td/table/tr/td[3]/table/tr[16]/td/table/tr[2]/td/table/tr[2]/td/div/a/@href').extract()
-        torrent = SongspkItem()
-        torrent['url'] = url[0]
-        torrent['title'] = title[0]
-        torrent['cookie'] = self.cl
-        return torrent
+
+        opener = urllib2.build_opener(urllib2.HTTPCookieProcessor(self.cookieJar.jar))
+        opener.addheaders = [('User-agent', USER_AGENT)]
+        qu = url[0]
+#        qu = urllib.quote(url[0], ":/()?")
+
+        while True:
+            try:
+                self.log(">>>>>>>>>>>>>>>>>>>> URL: %s" % qu)
+                resp = opener.open(qu)
+                ct = resp.headers['Content-type']
+                self.log(">>>>>>>>>>>>>>>>>>>> Content-Type: %s" % ct)
+                filename = os.path.split(resp.url)[1]
+                resp.close()
+                break
+            except:
+                qu = urllib.quote(qu, ":/")
+
+        if ct == 'application/zip' or ct == 'application/x-zip-compressed':
+            torrent = SongspkItem()
+            torrent['url'] = qu
+            torrent['title'] = title[0]
+            torrent['cookie'] = self.cl
+            torrent['filename'] = filename
+            yield torrent
+            return
+        yield Request(qu, callback=self.parse_category)
 
 
     def save_pdf(self, response):

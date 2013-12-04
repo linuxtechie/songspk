@@ -34,8 +34,9 @@ class SaveFilePipeline(object):
         stdout, stderr = output.communicate()
         rcode = output.returncode
         fileS = size(os.path.getsize('%s.zip' % item['title']))
-        self.cur.execute("insert into songspk values (?, ?, ?, ?)", (item['title'], "%s.zip" %
-              item['title'], rcode, fileS))
-        self.con.commit()
+        if rcode == 0:
+            self.cur.execute("insert into songspk values (?, ?, ?, ?)", (item['title'], "%s.zip" %
+                  item['title'], rcode, fileS))
+            self.con.commit()
         self.cur.close()
         return item
