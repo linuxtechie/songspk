@@ -28,14 +28,14 @@ class SaveFilePipeline(object):
         ctext = ctext + ("User-agent: %s" % USER_AGENT)
         args.append('--header="%s"' % ctext)
         args.append('"%s"' % item['url'])
-        args.append('--out="%s"' % item['filename'])
+        args.append('--out="Downloaded/%s"' % item['filename'])
         output = "%s.output" % item['title']
         print " ".join(args)
         output = Popen(args, stdin=PIPE, stdout=1, stderr=2)
         output.stdin.close()
         stdout, stderr = output.communicate()
         rcode = output.returncode
-        fileS = size(os.path.getsize('%s' % item['filename']))
+        fileS = size(os.path.getsize('Downloaded/%s' % item['filename']))
         if rcode == 0:
             self.cur.execute("insert into songspk values (?, ?, ?, ?)", (item['title'], "%s.zip" %
                   item['title'], rcode, fileS))
