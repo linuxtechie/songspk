@@ -30,13 +30,15 @@ class SaveFilePipeline(object):
         args.append('"%s"' % item['url'])
         args.append('--out="Downloaded/%s"' % item['filename'])
         output = "%s.output" % item['title']
-        print " ".join(args)
-        output = Popen(args, stdin=PIPE, stdout=1, stderr=2)
-        output.stdin.close()
-        stdout, stderr = output.communicate()
-        rcode = output.returncode
-        fileS = size(os.path.getsize('Downloaded/%s' % item['filename']))
-        if rcode == 0:
+        with open("aria2c.txt", "a") as myfile:
+            myfile.write("%s\n" % item['url'])
+        rcode = 0
+#        output = Popen(args, stdin=PIPE, stdout=1, stderr=2)
+#        output.stdin.close()
+#        stdout, stderr = output.communicate()
+#        rcode = output.returncode
+        if rcode == -1:
+#            fileS = size(os.path.getsize('Downloaded/%s' % item['filename']))
             self.cur.execute("insert into songspk values (?, ?, ?, ?)", (item['title'], "%s.zip" %
                   item['title'], rcode, fileS))
             self.con.commit()
