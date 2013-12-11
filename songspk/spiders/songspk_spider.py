@@ -7,16 +7,20 @@ from scrapy.contrib.linkextractors.sgml import SgmlLinkExtractor
 from scrapy.http.cookies import CookieJar
 from songspk.settings import USER_AGENT
 
+
 import re,pdb,os,urllib2,urllib
 
 class SongsPKSpider(BaseSpider):
     name = 'songspk'
     allowed_domains = ['songspk.name', 'songspk.info', 'mp3funda.se', 'downloadming1.com']
-#    start_urls = ['http://www.songspk.info/latest.html', 'http://www.songspk.name/bollywood_music_compilations.html']
-    start_urls = ['http://www.songspk.name/bollywood_music_compilations.html']
+    start_urls = ['http://www.songspk.info/latest.html', 'http://www.songspk.name/bollywood_music_compilations.html']
     cookieJar = None
     cookie = []
     cl = []
+
+    def __init__(self, *args, **kwargs):
+      super(SongsPKSpider, self).__init__(*args, **kwargs) 
+      self.start_urls = [kwargs.get('start_url')] 
 
     
     def storeCookie(self, response):
@@ -73,7 +77,6 @@ class SongsPKSpider(BaseSpider):
             title = " ".join(b[0].xpath('.//text()').extract())
             title = " ".join(title.split())
           
-        self.log("2222>>>> Title : %s URL :%s " % (title, url))
         return self.getFileName(url, title)
 
 
@@ -92,7 +95,9 @@ class SongsPKSpider(BaseSpider):
         sel = Selector(response)
         title = sel.xpath('/html/body/table/tr[2]/td/table/tr/td[3]/table/tr[16]/td/table/tr[2]/td/table/tr[2]/td/div/a/text()').extract()
         url = sel.xpath('/html/body/table/tr[2]/td/table/tr/td[3]/table/tr[16]/td/table/tr[2]/td/table/tr[2]/td/div/a/@href').extract()
-        return self.getFileName(url[0], title[0])
+        if len(title) > 0 and len(url) > 0:
+          return self.getFileName(url[0], title[0])
+        return 
 
     def getFileName(self, url, title):
         opener = urllib2.build_opener(urllib2.HTTPCookieProcessor(self.cookieJar.jar))
@@ -104,6 +109,7 @@ class SongsPKSpider(BaseSpider):
             try:
                 resp = opener.open(qu)
                 ct = resp.headers['Content-type']
+                size = resp.headers['Content-Length']
                 filename = os.path.split(resp.url)[1]
                 resp.close()
                 break
@@ -116,6 +122,7 @@ class SongsPKSpider(BaseSpider):
             torrent['title'] = title
             torrent['cookie'] = self.cl
             torrent['filename'] = urllib.unquote(filename)
+            torrent['size'] = size
             yield torrent
             return
         yield Request(qu, callback=self.parse_category)

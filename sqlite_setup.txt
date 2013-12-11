@@ -1,9 +1,9 @@
 BEGIN;
 CREATE TABLE SONGSPK (
   title TEXT PRIMARY KEY,
-  filename TEXT NOT NULL,
-  returncode INTEGER NOT NULL,
-  filesize TEXT NOT NULL
+  filename TEXT,
+  returncode INTEGER,
+  filesize TEXT
 );
 CREATE INDEX title_idx ON SONGSPK (title);
 COMMIT;
